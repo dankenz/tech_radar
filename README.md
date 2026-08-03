@@ -1,199 +1,276 @@
 # Radar
 
-Agente de curadoria tecnica + base de conhecimento pessoal (RAG), construido
-em fases.
+Personal agent that turns technical news into short, practical lessons,
+delivered via Telegram, prioritizing what you specifically don't know.
+Built in 4 phases, each introducing a different agent engineering pattern:
+tool use, RAG, multi-agent orchestration with LangGraph, and scheduled
+asynchronous delivery.
 
-## Fase 1 -- Agente curador (tool use)
+**Why this project exists:** it's the umbrella project of a practical
+learning plan to work as a freelance AI Engineer -- each phase was chosen
+to cover an agent archetype that shows up frequently in real client
+projects.
 
-Busca em RSS, Hacker News, dev.to e GNews/NewsAPI, filtra contra
-`config/profile.json` (seus gaps de conhecimento + watchlist estrategica).
+## Architecture
+
+```mermaid
+graph TD
+    subgraph F1["Phase 1 -- Curator (tool use)"]
+        A1[RSS: 15 engineering blogs] --> FIL[Relevance filter]
+        A2[Hacker News API] --> FIL
+        A3[dev.to API] --> FIL
+        A4[GNews / NewsAPI] --> FIL
+        FIL -->|profile.json: gaps + watchlist| DIG[Ranked digest]
+    end
+
+    subgraph F2["Phase 2 -- Local RAG"]
+        DIG --> EMB[FastEmbed: local embeddings]
+        EMB --> QD[(Qdrant Edge)]
+    end
+
+    subgraph F3["Phase 3 -- Multi-agent (LangGraph)"]
+        DIG --> CLS[Classifier: extracts concepts via LLM]
+        CLS --> GAP{matches a gap?}
+        GAP -->|yes| RET[Tutor: retrieves context]
+        QD --> RET
+        RET --> GEN[Tutor: generates the lesson]
+        GEN --> FB[Feedback loop]
+        FB -->|1 / 2 / 3| PROF[(profile.json updated)]
+        GAP -->|no| SKIP[skip, avoids wasting LLM/RAG calls]
+    end
+
+    subgraph F4["Phase 4 -- Delivery + scheduling"]
+        GEN --> TG[Telegram: sends the lesson]
+        TG --> PEND[(pending_feedback.json)]
+        PEND --> NEXT[Next scheduled run reads the reply]
+        NEXT --> FB
+        SCHED[Windows Task Scheduler, 2x/week] -.triggers.-> DIG
+    end
+```
+
+## Technical decisions (and why)
+
+Data sources: free RSS feeds + APIs (Hacker News, dev.to) before scraping
+or AI-powered search (Tavily/Exa) -- prioritizes zero cost and simplicity
+for Phase 1; scraping/AI search remain logged as future expansion, not
+blockers for the MVP.
+
+Two-layer relevance filter: Phase 1 uses keyword heuristics (fast, no LLM
+cost, delivers immediate value). Phase 3 replaces this with LLM-based
+semantic classification, which fixes real limitations of the heuristic --
+for example, substring matching producing false positives ("kubernetes
+community practices" matching the "kubernetes" gap even though it doesn't
+teach anything technical about the tool).
+
+Qdrant Edge (not a full Qdrant Cloud/server): runs embedded in the
+process, no extra infrastructure, appropriate for the volume of a
+personal project -- disk footprint was estimated before implementing, not
+after.
+
+One level-up per topic per day cap: a real bug found in production -- 3
+related lessons in the same run pushed a gap from level 0 to 3 at once,
+which doesn't reflect real learning. Fixed with a simple rule
+(`last_reviewed == today` blocks a further bump) and a documented 0-5
+level scale in `profile.json` itself.
+
+Telegram instead of WhatsApp: WhatsApp Business API requires business
+verification and pre-approved templates to send proactive messages
+outside a service window; Telegram has an open, free API with none of
+those restrictions -- a better fit for the personal use case here.
+
+Bot with no persistent server: each scheduled run first processes pending
+feedback (via Telegram polling), then sends new lessons. Avoids keeping a
+webhook or always-on service running on a personal machine just for a
+low-volume bot.
+
+## Phase 1 -- Curator agent (tool use)
+
+Searches RSS, Hacker News, dev.to and GNews/NewsAPI, filters against
+`config/profile.json` (your knowledge gaps + strategic watchlist).
 
 ### Setup
 
 ```bash
 pip install -r requirements.txt
 cp .env.example .env
-# preencha GNEWS_API_KEY e NEWSAPI_KEY no .env
+# fill in GNEWS_API_KEY and NEWSAPI_KEY in .env
 ```
 
-### Rodar
+### Run
 
 ```bash
 python main.py
 ```
 
-Imprime quantos itens cada fonte contribuiu e um digest ranqueado por
-relevancia. RSS, HN e dev.to funcionam sem chave.
+Prints how many items each source contributed and a digest ranked by
+relevance. RSS, HN and dev.to work without an API key.
 
-## Fase 2 -- Base RAG local (Qdrant Edge + FastEmbed)
+## Phase 2 -- Local RAG base (Qdrant Edge + FastEmbed)
 
-Guarda os itens relevantes coletados pela Fase 1 numa base vetorial local
-(Qdrant Edge, embutido no processo, sem servidor separado), pra ancorar
-explicacoes educativas na Fase 3 em vez de depender so da memoria do LLM.
+Stores the relevant items collected by Phase 1 in a local vector store
+(Qdrant Edge, embedded in-process, no separate server), to anchor
+educational explanations in Phase 3 instead of relying only on the LLM's
+memory.
 
-Embeddings sao gerados localmente via FastEmbed (`BAAI/bge-small-en-v1.5`,
-384 dimensoes) -- primeira execucao baixa o modelo (~130MB) e fica em cache
-em `storage/fastembed_models/`. Depois disso roda offline.
+Embeddings are generated locally via FastEmbed (`BAAI/bge-small-en-v1.5`,
+384 dimensions) -- the first run downloads the model (~130MB) and caches
+it in `storage/fastembed_models/`. After that it runs offline.
 
-### Popular a base
+### Populate the index
 
 ```bash
 python -m rag.build_index
 ```
 
-Roda o mesmo pipeline de busca+filtro da Fase 1 e indexa os itens
-relevantes. Rode de novo sempre que quiser atualizar a base com conteudo
-mais recente -- reindexar a mesma URL so atualiza o ponto existente, nao
-duplica.
+Runs the same search+filter pipeline from Phase 1 and indexes the
+relevant items. Run it again whenever you want to refresh the base with
+newer content -- reindexing the same URL just updates the existing point,
+it doesn't duplicate.
 
-### Testar a busca
+### Test the search
 
 ```bash
 python -m rag.query_index "kubernetes autoscaling"
 ```
 
-Retorna os 5 itens semanticamente mais proximos da sua pergunta, com
-titulo, fonte e link.
+Returns the 5 items semantically closest to your query, with title,
+source and link.
 
-### Onde fica salvo
+### Where it's stored
 
 ```
 storage/
-  qdrant_edge/        # o shard local -- seus dados de verdade
-  fastembed_models/    # cache do modelo de embedding baixado
+  qdrant_edge/        # the local shard -- your actual data
+  fastembed_models/    # cache of the downloaded embedding model
 ```
 
-Nota: o Qdrant Edge pre-aloca 32MB de WAL por shard, entao a pasta pode
-mostrar ~32MB mesmo com poucos dados -- isso e espaco reservado, nao uso
-real (mais detalhes na nossa conversa sobre dimensionamento).
+Note: Qdrant Edge pre-allocates 32MB of WAL per shard, so the folder may
+show ~32MB even with little data -- that's reserved space, not actual
+usage.
 
-Qdrant Edge esta em beta -- se algum metodo/parametro do pacote
-`qdrant-edge-py` nao bater exatamente com o que esta em `rag/index.py`,
-provavelmente a API mudou de versao; confira a doc oficial em
+Qdrant Edge is in beta -- if any method/parameter of the `qdrant-edge-py`
+package doesn't match exactly what's in `rag/index.py`, the API probably
+changed version; check the official docs at
 qdrant.tech/documentation/edge/.
 
-## Estrutura
+## Structure
 
 ```
 config/
-  profile.json         # perfil de conhecimento + watchlist estrategica
-  rss_sources.yaml      # blogs de engenharia curados, tagueados por topico
+  profile.json         # knowledge profile + strategic watchlist
+  rss_sources.yaml      # curated engineering blogs, tagged by topic
 tools/
-  rss_source.py          # feedparser sobre rss_sources.yaml
-  hn_source.py             # Hacker News via Algolia API (sem chave)
-  devto_source.py           # dev.to API (sem chave)
-  news_source.py              # GNews + NewsAPI (precisa de chave)
-relevance.py                  # scoring heuristico -- vira classificador via LLM na Fase 3
-main.py                        # orquestra a Fase 1 e imprime o digest
+  rss_source.py          # feedparser over rss_sources.yaml
+  hn_source.py             # Hacker News via Algolia API (no key needed)
+  devto_source.py           # dev.to API (no key needed)
+  news_source.py              # GNews + NewsAPI (needs a key)
+relevance.py                  # heuristic scoring -- becomes an LLM classifier in Phase 3
+main.py                        # orchestrates Phase 1 and prints the digest
 rag/
-  index.py                       # wrapper do Qdrant Edge + FastEmbed
-  build_index.py                   # popula a base a partir do pipeline da Fase 1
-  query_index.py                    # teste manual de busca
-storage/                             # dados locais (Qdrant Edge + cache de modelos)
+  index.py                       # Qdrant Edge + FastEmbed wrapper
+  build_index.py                   # populates the base from the Phase 1 pipeline
+  query_index.py                    # manual search test
+storage/                             # local data (Qdrant Edge + model cache)
 tutor/
-  llm.py                          # wrapper do cliente Anthropic
-  graph.py                         # grafo LangGraph: classificador + tutor + feedback
-  run_lesson.py                     # ponto de entrada da Fase 3 (terminal)
-  telegram_bot.py                    # cliente minimo da API do Telegram
-  pending.py                          # estado de licoes aguardando feedback
-  run_bot.py                           # ponto de entrada da Fase 4 (Telegram, agendado)
+  llm.py                          # Anthropic client wrapper
+  graph.py                         # LangGraph graph: classifier + tutor + feedback
+  run_lesson.py                     # Phase 3 entry point (terminal)
+  telegram_bot.py                    # minimal Telegram API client
+  pending.py                          # state of lessons awaiting feedback
+  run_bot.py                           # Phase 4 entry point (Telegram, scheduled)
 ```
 
-## Fase 3 -- Classificador + tutor + loop de feedback (multi-agente)
+## Phase 3 -- Classifier + tutor + feedback loop (multi-agent)
 
-Um grafo LangGraph com tres papeis:
+A LangGraph graph with three roles:
 
-1. **Classificador** -- pede pro LLM (Anthropic) extrair os conceitos
-   tecnicos de cada item e cruza com `knowledge_gaps` do profile.
-2. **Tutor** -- se bateu com algum gap, busca contexto na base RAG (Fase 2)
-   e gera uma explicacao curta e pratica ancorada nisso.
-3. **Loop de feedback** -- pergunta seu nivel de entendimento e atualiza
-   `profile.json` (nivel do gap, `last_reviewed`, `feedback_log`).
+1. **Classifier** -- asks the LLM (Anthropic) to extract the technical
+   concepts from each item and cross-references them with the profile's
+   `knowledge_gaps`.
+2. **Tutor** -- if it matched a gap, retrieves context from the RAG base
+   (Phase 2) and generates a short, practical explanation anchored in it.
+3. **Feedback loop** -- asks your understanding level and updates
+   `profile.json` (gap level, `last_reviewed`, `feedback_log`).
 
-Itens sem gap batido pulam direto pro fim (sem gastar LLM/RAG a toa).
+Items with no matched gap skip straight to the end (without wasting
+LLM/RAG calls).
 
-### Setup extra
+### Extra setup
 
 ```bash
-# preencha no .env:
+# fill in .env:
 ANTHROPIC_API_KEY=...
-# opcional, padrao e claude-sonnet-5:
+# optional, default is claude-sonnet-5:
 ANTHROPIC_MODEL=claude-haiku-4-5-20251001
 ```
 
-### Rodar
+### Run
 
 ```bash
-python -m tutor.run_lesson          # ate 3 licoes por rodada
-python -m tutor.run_lesson --max 5  # ajusta quantas
+python -m tutor.run_lesson          # up to 3 lessons per round
+python -m tutor.run_lesson --max 5  # adjust how many
 ```
 
-Cada item ja avaliado uma vez (registrado em `feedback_log`) nao repete em
-rodadas futuras. `profile.json` e reescrito no final com os niveis e o log
-atualizados.
+Each item already evaluated once (logged in `feedback_log`) won't repeat
+in future rounds. `profile.json` is rewritten at the end with updated
+levels and log.
 
-### Sobre o multi-agente
+### About the multi-agent setup
 
-Os tres papeis rodam como nos de um `StateGraph` do LangGraph, nao como
-processos separados -- pra um projeto pessoal isso e suficiente e mais
-simples de debugar que multi-processo de verdade. `tutor/graph.py` tem o
-grafo comentado no-a-no se quiser entender o fluxo.
+The three roles run as nodes of a LangGraph `StateGraph`, not as separate
+processes -- for a personal project this is enough and easier to debug
+than true multi-process. `tutor/graph.py` has the graph commented
+node-by-node if you want to understand the flow.
 
-## Fase 4 -- Bot de Telegram + agendamento
+## Phase 4 -- Telegram bot + scheduling
 
-Em vez de rodar `tutor.run_lesson` no terminal, o bot manda as licoes por
-Telegram e recebe seu feedback (1/2/3) por mensagem, numa execucao
-agendada (ex: 2x por semana). Sem servidor rodando o tempo todo -- cada
-execucao agendada primeiro processa feedback pendente, depois manda
-licoes novas.
+Instead of running `tutor.run_lesson` in the terminal, the bot sends
+lessons via Telegram and receives your feedback (1/2/3) by message, in a
+scheduled run (e.g., 2x per week). No server running all the time -- each
+scheduled run first processes pending feedback, then sends new lessons.
 
-### Setup do bot
+### Bot setup
 
-1. No Telegram, fale com **@BotFather**, mande `/newbot`, siga as
-   instrucoes e copie o token gerado.
-2. Cole o token em `TELEGRAM_BOT_TOKEN` no `.env`.
-3. Mande qualquer mensagem pro seu bot no Telegram (ele nao pode iniciar
-   a conversa).
-4. Rode:
+1. On Telegram, talk to **@BotFather**, send `/newbot`, follow the
+   instructions and copy the generated token.
+2. Paste the token into `TELEGRAM_BOT_TOKEN` in `.env`.
+3. Send any message to your bot on Telegram (it can't start the
+   conversation).
+4. Run:
    ```bash
    python -m tutor.telegram_bot
    ```
-   Isso imprime seu `chat_id` -- cole em `TELEGRAM_CHAT_ID` no `.env`.
+   This prints your `chat_id` -- paste it into `TELEGRAM_CHAT_ID` in
+   `.env`.
 
-### Rodar manualmente (teste)
+### Run manually (test)
 
 ```bash
-python -m tutor.run_bot          # ate 2 licoes novas
-python -m tutor.run_bot --max 1  # ajusta quantas
+python -m tutor.run_bot          # up to 2 new lessons
+python -m tutor.run_bot --max 1  # adjust how many
 ```
 
-### Agendar 2x por semana (Windows Task Scheduler)
+### Schedule 2x per week (Windows Task Scheduler)
 
-Via linha de comando (ajuste os caminhos pro seu ambiente):
+Via command line (adjust the paths to your environment):
 
 ```powershell
-schtasks /create /tn "Radar - Aulas" ^
-  /tr "C:\Users\dkenz\AppData\Local\Packages\Claude_pzs8sxrjxfjjc\LocalCache\Roaming\Claude\local-agent-mode-sessions\23040a5a-d223-4087-a4ea-6f0e3693fdd7\bf72b76b-e68d-40a8-b36c-bdb188d5ee6f\local_dcef25be-7296-41ab-a43b-afbd731a42dd\outputs\radar\tutor\run_bot.py" ^
+schtasks /create /tn "Radar - Lessons" ^
+  /tr "C:\path\to\python.exe -m tutor.run_bot" ^
   /sc weekly /d MON,THU /st 09:00 ^
   /rl LIMITED
 ```
 
-Use o `python.exe` de dentro do seu ambiente virtual (onde instalou o
-`requirements.txt`), e configure o "Start in" (diretorio inicial) pra
-pasta do projeto -- ou rode via um `.bat` que faz `cd` pra pasta antes.
-Alternativa: `taskschd.msc` (interface grafica) pra criar a mesma tarefa
-visualmente.
+Use the `python.exe` from inside your virtual environment (where you
+installed `requirements.txt`), and set "Start in" (working directory) to
+the project folder -- or run via a `.bat` that `cd`s into the folder
+first. Alternative: `taskschd.msc` (GUI) to create the same task visually.
 
-### Como o feedback e casado com a licao certa
+### How feedback gets matched to the right lesson
 
-Como nao ha processo esperando sua resposta em tempo real, cada licao
-enviada fica registrada em `storage/pending_feedback.json` ate voce
-responder. Na proxima execucao agendada, cada resposta numerica (1/2/3)
-que chegou e aplicada a licao pendente mais antiga (FIFO) -- ou seja,
-responda na mesma ordem em que as licoes chegaram. Pra 2 licoes por
-rodada isso costuma ser trivial na pratica.
-
-## Proximos passos
-
-Documentar a arquitetura completa e preparar o case pra portfolio (README
-mais robusto, screenshots/exemplos reais de licao gerada, incluindo o bot).
+Since there's no process waiting for your reply in real time, each sent
+lesson is logged in `storage/pending_feedback.json` until you respond. On
+the next scheduled run, each numeric reply (1/2/3) received is applied to
+the oldest pending lesson (FIFO) -- meaning you should reply in the same
+order lessons arrived. For 2 lessons per round this is usually trivial in
+practice.
