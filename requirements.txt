@@ -1,0 +1,12 @@
+feedparser>=6.0.11
+requests>=2.31.0
+pyyaml>=6.0.1
+python-dotenv>=1.0.1
+
+# Fase 2 -- RAG local (Qdrant Edge + FastEmbed)
+qdrant-edge-py
+fastembed
+
+# Fase 3 -- classificador de conceitos + tutor (multi-agente via LangGraph)
+langgraph>=0.2.0
+anthropic>=0.40.0

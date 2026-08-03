@@ -1,0 +1,227 @@
+{
+  "profile_version": "1.1",
+  "updated_at": "2026-07-10",
+  "content_preferences": {
+    "default_depth": "pratico",
+    "default_style": "blog e explicacao gerada por IA, curta e aplicada",
+    "note": "usar livros/papers/cursos completos so quando o topico tiver aprofundar=true",
+    "fontes_preferidas": [
+      "engineering blogs (Uber, Netflix, Databricks, Confluent, Redis)",
+      "conteudo sintetizado pelo proprio agente com RAG leve"
+    ]
+  },
+  "level_scale": {
+    "0": "nenhum conhecimento",
+    "1": "ja ouviu falar / entende o conceito em teoria, nunca usou na pratica",
+    "2": "usa na pratica com apoio (tutorial, copiar-colar), nao entende nuances",
+    "3": "usa com confianca no dia a dia, entende conceitos principais e casos de uso comuns",
+    "4": "entende trade-offs e nuances, consegue tomar decisoes de arquitetura",
+    "5": "especialista -- acompanha estado da arte, consegue ensinar outros"
+  },
+  "knowledge_gaps": [
+    {
+      "topic": "computer vision",
+      "level": 2,
+      "last_reviewed": null,
+      "notes": "basico em CNNs; nao conhece arquiteturas modernas de deteccao/segmentacao"
+    },
+    {
+      "topic": "voice synthesis / TTS",
+      "level": 1,
+      "last_reviewed": null,
+      "notes": "iniciante; nao conhece vocoders, mel-spectrograms, modelos de difusao de audio"
+    },
+    {
+      "topic": "ai agents (langgraph)",
+      "level": 4,
+      "last_reviewed": null,
+      "notes": "confortavel com tool use e orquestracao basica"
+    },
+    {
+      "topic": "Docker",
+      "level": 3,
+      "last_reviewed": "2026-07-11",
+      "notes": "Reforçou a compreensão prática de Docker no dia a dia e consolidou conceitos de orquestração, mas Kubernetes continua apenas teórico."
+    },
+    {
+      "topic": "kubernetes",
+      "level": 2,
+      "last_reviewed": "2026-07-11",
+      "notes": "Consegue executar tarefas básicas em Kubernetes com ajuda de documentação, mas ainda não domina conceitos como networking entre pods, persistência de dados e troubleshooting independente."
+    },
+    {
+      "topic": "Design de Experimentos",
+      "level": 2,
+      "last_reviewed": null,
+      "notes": "confortavel com testes A/B, mas nada de Switchback ou CUPED"
+    },
+    {
+      "topic": "Gradient Boosting",
+      "level": 2,
+      "last_reviewed": null,
+      "notes": "confortavel com uso pratico, mas sem conhecimento de nuancias, assim como pros e contras"
+    },
+    {
+      "topic": "AWS, GCP, Azure",
+      "level": 1,
+      "last_reviewed": null,
+      "notes": "conhecimento introdutorio. Sem experiencias ou projetos realizados"
+    },
+    {
+      "topic": "Kafka",
+      "level": 0,
+      "last_reviewed": null,
+      "notes": "nenhum conhecimento"
+    },
+    {
+      "topic": "gRPC",
+      "level": 0,
+      "last_reviewed": null,
+      "notes": "nenhum conhecimento"
+    },
+    {
+      "topic": "Redis",
+      "level": 0,
+      "last_reviewed": null,
+      "notes": "nenhum conhecimento"
+    },
+    {
+      "topic": "Distributed Training",
+      "level": 1,
+      "last_reviewed": null,
+      "notes": "conhecimento introdutorio. Sem experiencias ou projetos realizados"
+    },
+    {
+      "topic": "Model Serving",
+      "level": 1,
+      "last_reviewed": null,
+      "notes": "conhecimento introdutorio"
+    },
+    {
+      "topic": "Feature Stores",
+      "level": 1,
+      "last_reviewed": null,
+      "notes": "conhecimento introdutorio. Sem experiencias ou projetos realizados"
+    },
+    {
+      "topic": "MLOps",
+      "level": 2,
+      "last_reviewed": "2026-07-10",
+      "notes": "conhecimento introdutorio com pratica limitada em monitoramento/data drifting; entende agora o conceito de plataforma MLOps gerenciada (ex: Kubeflow no Azure)"
+    },
+    {
+      "topic": "System Design",
+      "level": 2,
+      "last_reviewed": "2026-07-10",
+      "notes": "Consegue aplicar conceitos básicos de sistemas distribuídos e gossip protocol em projetos simples, mas ainda depende de referências e exemplos para implementar sem erros."
+    },
+    {
+      "topic": "rag / vector search",
+      "level": 3,
+      "last_reviewed": null,
+      "notes": "sabe montar RAG simples; nao domina reranking e otimizacao de recall"
+    }
+  ],
+  "strategic_watchlist": [
+    {
+      "theme": "automacao de trabalho freelance com IA",
+      "why": "impacta diretamente meu modelo de negocio como AI Engineer freelancer",
+      "priority": "alta"
+    },
+    {
+      "theme": "novos frameworks e ferramentas de agentes",
+      "why": "define o que devo dominar para me manter competitivo",
+      "priority": "alta"
+    },
+    {
+      "theme": "ciencia aberta / desafios de dados publicos (ex: Vesuvius Challenge)",
+      "why": "interesse legitimo em aplicacoes de IA fora do escopo comercial imediato",
+      "priority": "media"
+    },
+    {
+      "theme": "rupturas de mercado em consultoria/desenvolvimento de software via IA",
+      "why": "sinaliza ameacas e oportunidades de posicionamento como freelancer",
+      "priority": "alta"
+    }
+  ],
+  "feedback_log": [
+    {
+      "date": "2026-07-10",
+      "item_title": "Canonical launches Managed Kubeflow on Azure to simplify MLOps infrastructure",
+      "item_url": "https://4sysops.com/archives/canonical-launches-managed-kubeflow-on-azure-to-simplify-mlops-infrastructure/",
+      "concepts": [
+        "kubeflow",
+        "mlops",
+        "kubernetes",
+        "machine learning workflows",
+        "microsoft azure"
+      ],
+      "feedback": "entendi_bem"
+    },
+    {
+      "date": "2026-07-10",
+      "item_title": "From Docker Compose to Kubernetes: What Actually Changes",
+      "item_url": "https://dev.to/jjoyneriv/from-docker-compose-to-kubernetes-what-actually-changes-4ga9",
+      "concepts": [
+        "docker compose",
+        "kubernetes",
+        "container orchestration",
+        "deployment mapping",
+        "container configuration"
+      ],
+      "feedback": "entendi_bem"
+    },
+    {
+      "date": "2026-07-10",
+      "item_title": "Open source maintainership in the age of AI",
+      "item_url": "https://kubernetes.io/blog/2026/06/26/open-source-maintainership-in-the-age-of-ai/",
+      "concepts": [
+        "open source maintainership",
+        "ai-assisted code generation",
+        "software patch contribution",
+        "code maintenance automation",
+        "kubernetes community practices"
+      ],
+      "feedback": "entendi_bem"
+    },
+    {
+      "date": "2026-07-10",
+      "item_title": "Gossip Protocol Explained",
+      "item_url": "http://highscalability.com/blog/2023/7/16/gossip-protocol-explained.html",
+      "concepts": [
+        "gossip protocol",
+        "distributed systems",
+        "system design",
+        "message propagation",
+        "peer-to-peer communication"
+      ],
+      "feedback": "entendi_bem"
+    },
+    {
+      "date": "2026-07-10",
+      "item_title": "How Netflix Simplified Batch Compute with Kueue",
+      "item_url": "https://netflixtechblog.com/how-netflix-simplified-batch-compute-with-kueue-87860682629c?source=rss----2615bd06b42e---4",
+      "concepts": [
+        "kueue",
+        "batch compute",
+        "kubernetes",
+        "infrastructure as code",
+        "job scheduling"
+      ],
+      "feedback": "entendi_bem"
+    },
+    {
+      "date": "2026-07-11",
+      "item_title": "Docker vs Kubernetes: Do You Actually Need an Orchestrator Yet?",
+      "item_url": "https://dev.to/jjoyneriv/docker-vs-kubernetes-do-you-actually-need-an-orchestrator-yet-57k0",
+      "concepts": [
+        "docker",
+        "kubernetes",
+        "container orchestration",
+        "containerization",
+        "container management"
+      ],
+      "feedback": "entendi_bem"
+    }
+  ]
+}

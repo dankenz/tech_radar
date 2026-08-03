@@ -1,0 +1,17 @@
+﻿# secrets
+.env
+
+# python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# local data / caches (regenerable, large)
+storage/
+
+# editor
+.vscode/
+
+# leftover test artifact
+_synctest.txt

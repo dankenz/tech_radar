@@ -1,0 +1,64 @@
+# Fontes RSS curadas — blogs práticos de engenharia, tagueados por tópico.
+# Tags devem bater (ou ser próximas) dos "topic" em config/profile.json
+# para o relevance.py conseguir cruzar fonte <-> gap de conhecimento.
+
+sources:
+  - name: "Netflix Tech Blog"
+    url: "https://netflixtechblog.com/feed"
+    tags: ["system design", "distributed training", "model serving"]
+
+  - name: "Meta Engineering"
+    url: "https://engineering.fb.com/feed/"
+    tags: ["system design", "distributed training", "model serving"]
+
+  - name: "Airbnb Engineering"
+    url: "https://medium.com/feed/airbnb-engineering"
+    tags: ["design de experimentos", "mlops", "gradient boosting"]
+
+  - name: "Databricks Blog"
+    url: "https://www.databricks.com/feed"
+    tags: ["feature stores", "mlops", "model serving"]
+
+  - name: "Confluent Blog"
+    url: "https://www.confluent.io/rss.xml"
+    tags: ["kafka"]
+
+  - name: "Redis Blog"
+    url: "https://redis.io/blog/feed/"
+    tags: ["redis"]
+
+  - name: "Kubernetes Blog"
+    url: "https://kubernetes.io/feed.xml"
+    tags: ["kubernetes", "docker"]
+
+  - name: "AWS Architecture Blog"
+    url: "https://aws.amazon.com/blogs/architecture/feed/"
+    tags: ["aws, gcp, azure", "system design"]
+
+  - name: "Google Cloud Blog"
+    url: "https://cloudblog.withgoogle.com/rss/"
+    tags: ["aws, gcp, azure", "mlops"]
+
+  - name: "Eugene Yan"
+    url: "https://eugeneyan.com/rss/"
+    tags: ["mlops", "rag / vector search", "gradient boosting", "system design"]
+
+  - name: "Chip Huyen"
+    url: "https://huyenchip.com/feed.xml"
+    tags: ["mlops", "system design", "model serving", "distributed training"]
+
+  - name: "Pinterest Engineering"
+    url: "https://medium.com/feed/pinterest-engineering"
+    tags: ["computer vision", "system design"]
+
+  - name: "Spotify Engineering"
+    url: "https://engineering.atspotify.com/feed/"
+    tags: ["design de experimentos", "mlops", "voice synthesis / tts"]
+
+  - name: "Slack Engineering"
+    url: "https://slack.engineering/feed/"
+    tags: ["mlops", "system design", "kafka"]
+
+  - name: "High Scalability"
+    url: "http://feeds.feedburner.com/HighScalability"
+    tags: ["system design", "kubernetes"]
